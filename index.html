@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Risal Man's Parlour — Booking & Queue</title>
+  <style>
+    :root{
+      --bg:#0f1113; --card:#131516; --accent:#c9a34a; --muted:#9aa0a6; --glass: rgba(255,255,255,0.03);
+      --success:#2ecc71;
+    }
+    *{box-sizing:border-box;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    body{margin:0; background:linear-gradient(180deg,var(--bg),#070808); color:#e9ecef; -webkit-font-smoothing:antialiased;}
+    .container{max-width:1100px;margin:28px auto;padding:20px;}
+    header{display:flex;align-items:center;gap:16px}
+    .logo{width:70px;height:70px;border-radius:8px;background:linear-gradient(135deg,#1b1d1f,#111214);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent);box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:4px 0 12px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:18px;margin-top:16px}
+    .card{background:linear-gradient(180deg,var(--card), #0e0f10);padding:18px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.03)}
+    .section-title{font-weight:700;margin-bottom:8px}
+    /* Booking form */
+    label{display:block;font-size:13px;margin-bottom:6px;color:var(--muted)}
+    input,select,button,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;outline:none}
+    .row{display:flex;gap:8px}
+    .row .col{flex:1}
+    button.primary{background:linear-gradient(90deg,var(--accent),#d4b36b);color:#111;font-weight:700;border:none;cursor:pointer;padding:10px;border-radius:8px;margin-top:8px}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);cursor:pointer;padding:8px;border-radius:8px}
+    .status{display:flex;gap:12px;align-items:center;margin-top:8px}
+    .status .big{font-size:18px;font-weight:800;color:var(--accent)}
+    .small{font-size:13px;color:var(--muted)}
+    /* queue list */
+    .list{max-height:260px;overflow:auto;margin-top:8px}
+    .item{display:flex;justify-content:space-between;padding:8px;border-radius:8px;margin-bottom:8px;background:var(--glass)}
+    /* whatsapp button */
+    .whatsapp{
+      position:fixed; right:18px; bottom:18px; background:linear-gradient(90deg,var(--accent),#e6c477); color:#111; padding:14px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,0.5); text-decoration:none; display:flex; gap:8px; align-items:center; font-weight:700;
+    }
+    .map{width:100%;height:180px;border-radius:8px;border:0;margin-top:8px}
+    footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+    .admin{margin-top:12px;display:flex;gap:8px;align-items:center}
+    .danger{background:transparent;border:1px solid rgba(255,0,0,0.12);color:#ff8a8a}
+    .badge{background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:999px;font-weight:700;color:var(--accent)}
+    @media(max-width:880px){.grid{grid-template-columns:1fr;}.whatsapp{right:12px;bottom:12px}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">RM</div>
+      <div>
+        <h1>Risal Man's Parlour</h1>
+        <p class="lead">Address: Dolatpura, Salai wali masjid ke pas · WhatsApp: +91 70679 42006</p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT: Booking, Queue, Gallery -->
+      <div>
+        <div class="card">
+          <div class="section-title">Live Queue Status</div>
+          <div style="display:flex;gap:12px;align-items:center;">
+            <div>
+              <div class="small">Currently Serving</div>
+              <div class="big" id="servingDisplay">—</div>
+            </div>
+            <div>
+              <div class="small">Total Tickets Issued</div>
+              <div class="big" id="ticketCounterDisplay">0</div>
+            </div>
+            <div>
+              <div class="small">Waiting</div>
+              <div class="big" id="waitingDisplay">0</div>
+            </div>
+          </div>
+
+          <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:12px 0">
+
+          <div class="section-title">Book a Time Slot</div>
+          <div class="small">Enter your name and mobile number. Select a slot. Ticket will be issued immediately.</div>
+
+          <form id="bookingForm" style="margin-top:10px">
+            <label>Name</label>
+            <input id="name" type="text" placeholder="Enter your name" required>
+
+            <label style="margin-top:8px">Mobile Number</label>
+            <input id="mobile" type="tel" placeholder="+91 9XXXXXXXXX" pattern="[0-9+ ]+" required>
+
+            <label style="margin-top:8px">Select Time Slot</label>
+            <select id="slotSelect"></select>
+
+            <button type="submit" class="primary">Book & Get Number</button>
+          </form>
+
+          <div id="bookingResult" style="margin-top:12px;display:none" class="card" >
+            <div class="small">Booking Confirmed</div>
+            <div style="display:flex;gap:12px;align-items:center;margin-top:8px">
+              <div class="badge" id="yourTicket">#0</div>
+              <div>
+                <div id="yourSlot" style="font-weight:700"></div>
+                <div id="yourWaiting" class="small"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="section-title">Today's Queue (Recent Bookings)</div>
+          <div class="list" id="queueList">
+            <!-- items -->
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="section-title">Gallery</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+            <div style="width:120px;height:80px;background:#111;border-radius:8px"></div>
+            <div style="width:120px;height:80px;background:#111;border-radius:8px"></div>
+            <div style="width:120px;height:80px;background:#111;border-radius:8px"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: Contact, Map, Admin -->
+      <div>
+        <div class="card">
+          <div class="section-title">Contact & Location</div>
+          <div class="small" style="margin-bottom:8px">Risal Man's Parlour<br>Dolatpura, Salai wali masjid ke pas</div>
+          <iframe class="map" src="https://www.google.com/maps?q=Dolatpura%20Salai%20wali%20masjid%20ke%20pas&output=embed"></iframe>
+          <a class="primary" style="display:block;text-align:center;margin-top:8px;text-decoration:none" href="tel:+917067942006">Call: +91 70679 42006</a>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="section-title">Admin Controls</div>
+          <div class="small">(Simple local admin panel — PIN: <strong>1234</strong>)</div>
+
+          <div style="margin-top:8px">
+            <label>Enter PIN to show admin buttons</label>
+            <input id="adminPin" type="password" placeholder="Enter PIN">
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button id="unlockBtn" class="ghost">Unlock</button>
+              <button id="lockBtn" class="ghost" style="display:none">Lock</button>
+            </div>
+          </div>
+
+          <div id="adminPanel" style="display:none;margin-top:10px">
+            <div class="admin">
+              <button id="nextBtn" class="primary">Next Customer →</button>
+              <button id="resetBtn" class="ghost danger">Reset Queue</button>
+            </div>
+            <div style="margin-top:8px" class="small">Current serving and counters update for everyone using this browser (localStorage).</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="section-title">Quick Info</div>
+          <div class="small">Shop name: <strong>Risal Man's Parlour</strong></div>
+          <div class="small">WhatsApp: <strong>+91 70679 42006</strong></div>
+        </div>
+
+      </div>
+    </div>
+
+    <footer>Built for Risal Man's Parlour • Local storage based demo</footer>
+  </div>
+
+  <a class="whatsapp" id="whatsappBtn" href="https://wa.me/917067942006" target="_blank" rel="noreferrer">
+    WhatsApp · +91 70679 42006
+  </a>
+
+<script>
+  // ====== Config (change here if needed) ======
+  const OWNER_WHATSAPP = "917067942006"; // without + for wa.me
+  const SHOP_NAME = "Risal Man's Parlour";
+  const ADMIN_PIN = "1234";
+
+  // ====== localStorage keys ======
+  const KEY_BOOKINGS = "rmp_bookings_v1";
+  const KEY_TICKET = "rmp_ticketCounter_v1";
+  const KEY_SERVING = "rmp_currentServing_v1";
+
+  // ====== helpers ======
+  function loadBookings(){ return JSON.parse(localStorage.getItem(KEY_BOOKINGS) || "[]"); }
+  function saveBookings(b){ localStorage.setItem(KEY_BOOKINGS, JSON.stringify(b)); }
+  function loadTicket(){ return parseInt(localStorage.getItem(KEY_TICKET) || "0", 10); }
+  function saveTicket(n){ localStorage.setItem(KEY_TICKET, String(n)); }
+  function loadServing(){ return parseInt(localStorage.getItem(KEY_SERVING) || "0", 10); }
+  function saveServing(n){ localStorage.setItem(KEY_SERVING, String(n)); }
+
+  // initialize if not present
+  if(!localStorage.getItem(KEY_BOOKINGS)) saveBookings([]);
+  if(!localStorage.getItem(KEY_TICKET)) saveTicket(0);
+  if(!localStorage.getItem(KEY_SERVING)) saveServing(0);
+
+  // UI refs
+  const slotSelect = document.getElementById("slotSelect");
+  const bookingForm = document.getElementById("bookingForm");
+  const queueList = document.getElementById("queueList");
+  const ticketCounterDisplay = document.getElementById("ticketCounterDisplay");
+  const servingDisplay = document.getElementById("servingDisplay");
+  const waitingDisplay = document.getElementById("waitingDisplay");
+  const bookingResult = document.getElementById("bookingResult");
+  const yourTicket = document.getElementById("yourTicket");
+  const yourSlot = document.getElementById("yourSlot");
+  const yourWaiting = document.getElementById("yourWaiting");
+
+  const adminPin = document.getElementById("adminPin");
+  const unlockBtn = document.getElementById("unlockBtn");
+  const lockBtn = document.getElementById("lockBtn");
+  const adminPanel = document.getElementById("adminPanel");
+  const nextBtn = document.getElementById("nextBtn");
+  const resetBtn = document.getElementById("resetBtn");
+
+  // populate time slots: from 09:00 to 18:00 every 30 mins
+  function generateSlots(startH=9, endH=18, stepMin=30){
+    const slots = [];
+    for(let h=startH; h<=endH; h++){
+      for(let m=0; m<60; m+=stepMin){
+        const hh = String(h).padStart(2,"0");
+        const mm = String(m).padStart(2,"0");
+        const label = hh + ":" + mm;
+        slots.push(label);
+      }
+    }
+    return slots;
+  }
+  const slots = generateSlots(9,18,30);
+  slots.forEach(s=>{
+    const opt = document.createElement("option");
+    opt.value = s; opt.innerText = s;
+    slotSelect.appendChild(opt);
+  });
+
+  // update dashboard
+  function refreshUI(){
+    const bookings = loadBookings();
+    const ticketCounter = loadTicket();
+    const serving = loadServing();
+
+    ticketCounterDisplay.innerText = ticketCounter;
+    servingDisplay.innerText = serving === 0 ? "—" : "#" + serving;
+    // waiting overall = total tickets - serving (if serving=0, waiting = total)
+    const waitingAll = Math.max(0, ticketCounter - serving);
+    waitingDisplay.innerText = waitingAll;
+
+    // populate recent bookings (last 30)
+    queueList.innerHTML = "";
+    const recent = bookings.slice().reverse().slice(0,50);
+    recent.forEach(b=>{
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `<div><strong>#${b.ticket}</strong> ${b.name} <div class="small">${b.mobile} · ${b.slot}</div></div>
+                       <div class="small">${new Date(b.time).toLocaleString()}</div>`;
+      queueList.appendChild(div);
+    });
+  }
+
+  refreshUI();
+
+  // Booking handler
+  bookingForm.addEventListener("submit", (e)=>{
+    e.preventDefault();
+    const name = document.getElementById("name").value.trim();
+    const mobile = document.getElementById("mobile").value.trim();
+    const slot = document.getElementById("slotSelect").value;
+    if(!name || !mobile){ alert("Name and mobile are required."); return; }
+
+    // assign ticket
+    let ticket = loadTicket();
+    ticket = ticket + 1;
+    saveTicket(ticket);
+
+    // store booking
+    const bookings = loadBookings();
+    bookings.push({ ticket: ticket, name: name, mobile: mobile, slot: slot, time: new Date().toISOString() });
+    saveBookings(bookings);
+
+    // show result
+    const serving = loadServing();
+    const waiting = Math.max(0, ticket - serving);
+    bookingResult.style.display = "block";
+    yourTicket.innerText = "#" + ticket;
+    yourSlot.innerText = "Slot: " + slot;
+    yourWaiting.innerText = `Currently serving: ${serving===0? "—": "#"+serving } · Waiting ahead: ${waiting}`;
+
+    // clear form (except slot)
+    document.getElementById("name").value = "";
+    document.getElementById("mobile").value = "";
+
+    refreshUI();
+    // optional: offer WA to owner with booking info
+    // (we provide WA button always)
+  });
+
+  // Admin unlock
+  unlockBtn.addEventListener("click", ()=>{
+    if(adminPin.value === ADMIN_PIN){
+      adminPanel.style.display = "block";
+      unlockBtn.style.display = "none";
+      lockBtn.style.display = "inline-block";
+      adminPin.value = "";
+    } else {
+      alert("Wrong PIN");
+    }
+  });
+  lockBtn.addEventListener("click", ()=>{
+    adminPanel.style.display = "none";
+    unlockBtn.style.display = "inline-block";
+    lockBtn.style.display = "none";
+  });
+
+  // Next customer
+  nextBtn.addEventListener("click", ()=>{
+    let serving = loadServing();
+    const ticket = loadTicket();
+    if(serving < ticket){
+      serving = serving + 1;
+      saveServing(serving);
+      refreshUI();
+    } else {
+      alert("No more customers in queue.");
+    }
+  });
+
+  // Reset queue (danger)
+  resetBtn.addEventListener("click", ()=>{
+    if(!confirm("Are you sure? This will reset tickets and bookings on this browser.")) return;
+    saveBookings([]);
+    saveTicket(0);
+    saveServing(0);
+    refreshUI();
+    bookingResult.style.display = "none";
+    alert("Queue reset done.");
+  });
+
+  // show user's waiting on page load if they have just booked (we store lastTicket in sessionStorage)
+  // We'll also show waiting if user reloads and they have any ticket (show the latest ticket in bookings belonging to same mobile?)
+  // Simpler: keep lastTicket in sessionStorage during this session
+  // (session storage set when booking)
+  (function showSessionTicket(){
+    const lastTicket = sessionStorage.getItem("rmp_lastTicket");
+    if(lastTicket){
+      const bookings = loadBookings();
+      const b = bookings.find(x=> String(x.ticket) === String(lastTicket));
+      if(b){
+        bookingResult.style.display = "block";
+        yourTicket.innerText = "#" + b.ticket;
+        yourSlot.innerText = "Slot: " + b.slot;
+        const serving = loadServing();
+        yourWaiting.innerText = `Currently serving: ${serving===0? "—": "#"+serving } · Waiting ahead: ${ Math.max(0, b.ticket - serving) }`;
+      }
+    }
+  })();
+
+  // enhance: whenever a booking is made, set lastTicket
+  (function interceptBookingForm(){
+    bookingForm.addEventListener("submit", ()=>{
+      // small timeout to allow booking handler to set ticket
+      set
